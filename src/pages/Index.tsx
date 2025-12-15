@@ -40,6 +40,7 @@ export default function Index() {
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<number>(0);
   const [activeSection, setActiveSection] = useState('home');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const addToCart = (product: Product) => {
     const existingItem = cart.find(item => item.id === product.id);
@@ -78,6 +79,38 @@ export default function Index() {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const promoDiscount = (subtotal * appliedPromo) / 100;
   const total = subtotal - promoDiscount;
+
+  const handlePayment = async () => {
+    setIsProcessingPayment(true);
+    try {
+      const orderDescription = `Заказ: ${cart.map(item => `${item.name} x${item.quantity}`).join(', ')}`;
+      const currentUrl = window.location.origin;
+      
+      const response = await fetch('https://functions.poehali.dev/e9a21470-802a-415b-b446-8393e96304ef', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: total,
+          description: orderDescription,
+          return_url: `${currentUrl}?payment=success`
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.confirmation_url) {
+        window.location.href = data.confirmation_url;
+      } else {
+        alert(data.error || 'Ошибка при создании платежа');
+      }
+    } catch (error) {
+      alert('Ошибка соединения с сервером оплаты');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
 
   const renderHome = () => (
     <div className="space-y-12">
@@ -416,8 +449,23 @@ export default function Index() {
                             <span>Итого:</span>
                             <span className="text-primary">{total.toLocaleString()}₽</span>
                           </div>
-                          <Button className="w-full mt-4 font-semibold" size="lg">
-                            Оформить заказ
+                          <Button 
+                            className="w-full mt-4 font-semibold" 
+                            size="lg"
+                            onClick={handlePayment}
+                            disabled={isProcessingPayment}
+                          >
+                            {isProcessingPayment ? (
+                              <>
+                                <Icon name="Loader2" className="mr-2 animate-spin" />
+                                Подготовка оплаты...
+                              </>
+                            ) : (
+                              <>
+                                <Icon name="CreditCard" className="mr-2" />
+                                Перейти к оплате
+                              </>
+                            )}
                           </Button>
                         </CardContent>
                       </Card>

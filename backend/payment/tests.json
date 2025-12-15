@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Test payment creation",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "amount": 1000.50,
+        "description": "Тестовый заказ",
+        "return_url": "https://example.com/success"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "payment_id": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test invalid method",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 405,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
